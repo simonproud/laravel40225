@@ -6,6 +6,7 @@ use App\Models\Operation;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Сервис для работы с операциями (Operation).
@@ -17,20 +18,6 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class OperationService
 {
-    /**
-     * Получить все операции конкретного пользователя (без пагинации).
-     *
-     * @param  User  $user Пользователь, чьи операции нужны
-     * @return Collection<Operation>
-     */
-    public function getAllOperations(User $user): Collection
-    {
-        return Operation::query()
-            ->where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-    }
-
     /**
      * Получить ограниченное количество последних операций пользователя.
      *
@@ -56,26 +43,9 @@ class OperationService
      */
     public function getOperationsPaginated(User $user, int $perPage = 10): LengthAwarePaginator
     {
-        return Operation::query()
+        return DB::transaction(fn() => Operation::query()
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
-    }
-
-    /**
-     * Создать новую операцию для пользователя.
-     *
-     * @param  User    $user           Пользователь, для которого создаётся операция
-     * @param  float   $amount         Сумма операции
-     * @param  string  $operationType  Тип операции (debit/credit)
-     * @return Operation
-     */
-    public function createOperation(User $user, float $amount, string $operationType): Operation
-    {
-        return Operation::create([
-            'user_id'        => $user->id,
-            'amount'         => $amount,
-            'operation_type' => $operationType,
-        ]);
+            ->paginate($perPage));
     }
 }
